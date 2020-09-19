@@ -55,16 +55,16 @@ func TestLogger(t *testing.T) {
 	tests := map[string]struct {
 		args args
 	}{
-		"debug":  {args: args{lvl: log.DebugLevel, args: []interface{}{"hello world"}, lineNumber: 58}},
-		"debugf": {args: args{lvl: log.DebugLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 60}},
-		"info":   {args: args{lvl: log.InfoLevel, args: []interface{}{"hello world"}, lineNumber: 64}},
-		"infof":  {args: args{lvl: log.InfoLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 66}},
-		"warn":   {args: args{lvl: log.WarnLevel, args: []interface{}{"hello world"}, lineNumber: 70}},
-		"warnf":  {args: args{lvl: log.WarnLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 72}},
-		"error":  {args: args{lvl: log.ErrorLevel, args: []interface{}{"hello world"}, lineNumber: 76}},
-		"errorf": {args: args{lvl: log.ErrorLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 78}},
-		"panic":  {args: args{lvl: log.PanicLevel, args: []interface{}{"hello world"}, lineNumber: 83}},
-		"panicf": {args: args{lvl: log.PanicLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 87}},
+		"debug":  {args: args{lvl: log.DebugLevel, args: []interface{}{"hello world"}, lineNumber: 76}},
+		"debugf": {args: args{lvl: log.DebugLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 78}},
+		"info":   {args: args{lvl: log.InfoLevel, args: []interface{}{"hello world"}, lineNumber: 82}},
+		"infof":  {args: args{lvl: log.InfoLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 84}},
+		"warn":   {args: args{lvl: log.WarnLevel, args: []interface{}{"hello world"}, lineNumber: 88}},
+		"warnf":  {args: args{lvl: log.WarnLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 90}},
+		"error":  {args: args{lvl: log.ErrorLevel, args: []interface{}{"hello world"}, lineNumber: 94}},
+		"errorf": {args: args{lvl: log.ErrorLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 96}},
+		"panic":  {args: args{lvl: log.PanicLevel, args: []interface{}{"hello world"}, lineNumber: 101}},
+		"panicf": {args: args{lvl: log.PanicLevel, msg: "Hi, %s", args: []interface{}{"John"}, lineNumber: 105}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {

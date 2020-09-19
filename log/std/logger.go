@@ -1,3 +1,4 @@
+// Package std is the implementation of the logger interface with the standard log package.
 package std
 
 import (
@@ -20,6 +21,7 @@ var levelMap = map[patronLog.Level]string{
 	patronLog.PanicLevel: "PNC",
 }
 
+// Logger implementation of the std log.
 type Logger struct {
 	level      patronLog.Level
 	fields     map[string]interface{}
@@ -33,6 +35,9 @@ type Logger struct {
 	fatal      *log.Logger
 }
 
+//TODO: use log level to disallow logging...
+
+// NewLogger constructor.
 func NewLogger(out io.Writer, lvl patronLog.Level, fields map[string]interface{}) *Logger {
 
 	fieldsLine := createFieldsLine(fields)
@@ -58,7 +63,7 @@ func createFieldsLine(fields map[string]interface{}) string {
 
 	// always return the fields in the same order
 	keys := make([]string, 0, len(fields))
-	for key, _ := range fields {
+	for key := range fields {
 		keys = append(keys, key)
 	}
 
@@ -81,6 +86,7 @@ func createLogger(out io.Writer, lvl patronLog.Level, fieldLine string) *log.Log
 	return logger
 }
 
+// Sub returns a sub logger with additional fields.
 func (l *Logger) Sub(fields map[string]interface{}) patronLog.Logger {
 
 	for key, value := range l.fields {
@@ -90,56 +96,69 @@ func (l *Logger) Sub(fields map[string]interface{}) patronLog.Logger {
 	return NewLogger(l.out, l.level, fields)
 }
 
+// Fatal logging.
 func (l *Logger) Fatal(args ...interface{}) {
 	output(l.fatal, args...)
 	os.Exit(1)
 }
 
+// Fatalf logging.
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
 	outputf(l.fatal, msg, args...)
 	os.Exit(1)
 }
 
+// Panic logging.
 func (l *Logger) Panic(args ...interface{}) {
 	panic(output(l.panic, args...))
 }
 
+// Panicf logging.
 func (l *Logger) Panicf(msg string, args ...interface{}) {
 	panic(outputf(l.panic, msg, args...))
 }
 
+// Error logging.
 func (l *Logger) Error(args ...interface{}) {
 	output(l.error, args...)
 }
 
+// Errorf logging.
 func (l *Logger) Errorf(msg string, args ...interface{}) {
 	outputf(l.error, msg, args...)
 }
 
+// Warn logging.
 func (l *Logger) Warn(args ...interface{}) {
 	output(l.warn, args...)
 }
 
+// Warnf logging.
 func (l *Logger) Warnf(msg string, args ...interface{}) {
 	outputf(l.warn, msg, args...)
 }
 
+// Info logging.
 func (l *Logger) Info(args ...interface{}) {
 	output(l.info, args...)
 }
 
+// Infof logging.
 func (l *Logger) Infof(msg string, args ...interface{}) {
 	outputf(l.info, msg, args...)
 }
 
+// Debug logging.
 func (l *Logger) Debug(args ...interface{}) {
 	output(l.debug, args...)
 }
 
+// Debugf logging.
 func (l *Logger) Debugf(msg string, args ...interface{}) {
 	outputf(l.debug, msg, args...)
 }
 
+// Level of the logging.
 func (l *Logger) Level() patronLog.Level {
 	return l.level
 }
