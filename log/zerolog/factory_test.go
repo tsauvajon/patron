@@ -9,7 +9,7 @@ import (
 )
 
 func TestDefaultFactory(t *testing.T) {
-	f := Create(log.InfoLevel)
+	f := Create(log.InfoLevel)(map[string]interface{}{"name": "john"})
 	assert.NotNil(t, f)
 }
 

@@ -12,6 +12,16 @@ import (
 	patronLog "github.com/beatlabs/patron/log"
 )
 
+var levelOrder = map[patronLog.Level]int{
+	patronLog.DebugLevel: 0,
+	patronLog.InfoLevel:  1,
+	patronLog.WarnLevel:  2,
+	patronLog.ErrorLevel: 3,
+	patronLog.PanicLevel: 4,
+	patronLog.FatalLevel: 5,
+	patronLog.NoLevel:    6,
+}
+
 var levelMap = map[patronLog.Level]string{
 	patronLog.DebugLevel: "DBG",
 	patronLog.InfoLevel:  "INF",
@@ -34,8 +44,6 @@ type Logger struct {
 	panic      *log.Logger
 	fatal      *log.Logger
 }
-
-//TODO: use log level to disallow logging...
 
 // NewLogger constructor.
 func NewLogger(out io.Writer, lvl patronLog.Level, fields map[string]interface{}) *Logger {
@@ -98,69 +106,124 @@ func (l *Logger) Sub(fields map[string]interface{}) patronLog.Logger {
 
 // Fatal logging.
 func (l *Logger) Fatal(args ...interface{}) {
+	if !l.shouldLog(patronLog.FatalLevel) {
+		return
+	}
+
 	output(l.fatal, args...)
 	os.Exit(1)
 }
 
 // Fatalf logging.
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.FatalLevel) {
+		return
+	}
+
 	outputf(l.fatal, msg, args...)
 	os.Exit(1)
 }
 
 // Panic logging.
 func (l *Logger) Panic(args ...interface{}) {
+	if !l.shouldLog(patronLog.PanicLevel) {
+		return
+	}
+
 	panic(output(l.panic, args...))
 }
 
 // Panicf logging.
 func (l *Logger) Panicf(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.PanicLevel) {
+		return
+	}
+
 	panic(outputf(l.panic, msg, args...))
 }
 
 // Error logging.
 func (l *Logger) Error(args ...interface{}) {
+	if !l.shouldLog(patronLog.ErrorLevel) {
+		return
+	}
+
 	output(l.error, args...)
 }
 
 // Errorf logging.
 func (l *Logger) Errorf(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.ErrorLevel) {
+		return
+	}
+
 	outputf(l.error, msg, args...)
 }
 
 // Warn logging.
 func (l *Logger) Warn(args ...interface{}) {
+	if !l.shouldLog(patronLog.WarnLevel) {
+		return
+	}
+
 	output(l.warn, args...)
 }
 
 // Warnf logging.
 func (l *Logger) Warnf(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.WarnLevel) {
+		return
+	}
+
 	outputf(l.warn, msg, args...)
 }
 
 // Info logging.
 func (l *Logger) Info(args ...interface{}) {
+	if !l.shouldLog(patronLog.InfoLevel) {
+		return
+	}
+
 	output(l.info, args...)
 }
 
 // Infof logging.
 func (l *Logger) Infof(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.InfoLevel) {
+		return
+	}
+
 	outputf(l.info, msg, args...)
 }
 
 // Debug logging.
 func (l *Logger) Debug(args ...interface{}) {
+	if !l.shouldLog(patronLog.DebugLevel) {
+		return
+	}
+
 	output(l.debug, args...)
 }
 
 // Debugf logging.
 func (l *Logger) Debugf(msg string, args ...interface{}) {
+	if !l.shouldLog(patronLog.DebugLevel) {
+		return
+	}
+
 	outputf(l.debug, msg, args...)
 }
 
 // Level of the logging.
 func (l *Logger) Level() patronLog.Level {
 	return l.level
+}
+
+func (l *Logger) shouldLog(lvl patronLog.Level) bool {
+	if levelOrder[l.level] <= levelOrder[lvl] {
+		return true
+	}
+	return false
 }
 
 func output(logger *log.Logger, args ...interface{}) string {

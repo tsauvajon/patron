@@ -44,7 +44,7 @@ func TestNewSub(t *testing.T) {
 func TestLogger(t *testing.T) {
 	// BEWARE: Since we are testing the log output change in line number of statements affect the test outcome
 	var b bytes.Buffer
-	logger := NewLogger(&b, log.InfoLevel, map[string]interface{}{"name": "john doe", "age": 18})
+	logger := NewLogger(&b, log.DebugLevel, map[string]interface{}{"name": "john doe", "age": 18})
 
 	type args struct {
 		lvl        log.Level
@@ -122,6 +122,67 @@ func getMessage(lineNumber int, lvl log.Level) string {
 
 func getMessagef(lineNumber int, lvl log.Level) string {
 	return fmt.Sprintf("logger_test.go:%d: %s age=18 name=john doe Hi, John", lineNumber, levelMap[lvl])
+}
+
+func TestLogger_shouldLog(t *testing.T) {
+
+	type args struct {
+		lvl log.Level
+	}
+	tests := map[string]struct {
+		setupLevel log.Level
+		args       args
+		want       bool
+	}{
+		"setup debug,passing debug":    {setupLevel: log.DebugLevel, args: args{lvl: log.DebugLevel}, want: true},
+		"setup debug,passing info":     {setupLevel: log.DebugLevel, args: args{lvl: log.InfoLevel}, want: true},
+		"setup debug,passing warn":     {setupLevel: log.DebugLevel, args: args{lvl: log.WarnLevel}, want: true},
+		"setup debug,passing error":    {setupLevel: log.DebugLevel, args: args{lvl: log.ErrorLevel}, want: true},
+		"setup debug,passing panic":    {setupLevel: log.DebugLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup debug,passing fatal":    {setupLevel: log.DebugLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup info,passing debug":     {setupLevel: log.InfoLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup info,passing info":      {setupLevel: log.InfoLevel, args: args{lvl: log.InfoLevel}, want: true},
+		"setup info,passing warn":      {setupLevel: log.InfoLevel, args: args{lvl: log.WarnLevel}, want: true},
+		"setup info,passing error":     {setupLevel: log.InfoLevel, args: args{lvl: log.ErrorLevel}, want: true},
+		"setup info,passing panic":     {setupLevel: log.InfoLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup info,passing fatal":     {setupLevel: log.InfoLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup warn,passing debug":     {setupLevel: log.WarnLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup warn,passing info":      {setupLevel: log.WarnLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup warn,passing warn":      {setupLevel: log.WarnLevel, args: args{lvl: log.WarnLevel}, want: true},
+		"setup warn,passing error":     {setupLevel: log.WarnLevel, args: args{lvl: log.ErrorLevel}, want: true},
+		"setup warn,passing panic":     {setupLevel: log.WarnLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup warn,passing fatal":     {setupLevel: log.WarnLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup error,passing debug":    {setupLevel: log.ErrorLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup error,passing info":     {setupLevel: log.ErrorLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup error,passing warn":     {setupLevel: log.ErrorLevel, args: args{lvl: log.WarnLevel}, want: false},
+		"setup error,passing error":    {setupLevel: log.ErrorLevel, args: args{lvl: log.ErrorLevel}, want: true},
+		"setup error,passing panic":    {setupLevel: log.ErrorLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup error,passing fatal":    {setupLevel: log.ErrorLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup panic,passing debug":    {setupLevel: log.PanicLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup panic,passing info":     {setupLevel: log.PanicLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup panic,passing warn":     {setupLevel: log.PanicLevel, args: args{lvl: log.WarnLevel}, want: false},
+		"setup panic,passing error":    {setupLevel: log.PanicLevel, args: args{lvl: log.ErrorLevel}, want: false},
+		"setup panic,passing panic":    {setupLevel: log.PanicLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup panic,passing fatal":    {setupLevel: log.PanicLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup fatal,passing debug":    {setupLevel: log.FatalLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup fatal,passing info":     {setupLevel: log.FatalLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup fatal,passing warn":     {setupLevel: log.FatalLevel, args: args{lvl: log.WarnLevel}, want: false},
+		"setup fatal,passing error":    {setupLevel: log.FatalLevel, args: args{lvl: log.ErrorLevel}, want: false},
+		"setup fatal,passing panic":    {setupLevel: log.FatalLevel, args: args{lvl: log.PanicLevel}, want: false},
+		"setup fatal,passing fatal":    {setupLevel: log.FatalLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup no level,passing debug": {setupLevel: log.NoLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup no level,passing info":  {setupLevel: log.NoLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup no level,passing warn":  {setupLevel: log.NoLevel, args: args{lvl: log.WarnLevel}, want: false},
+		"setup no level,passing error": {setupLevel: log.NoLevel, args: args{lvl: log.ErrorLevel}, want: false},
+		"setup no level,passing panic": {setupLevel: log.NoLevel, args: args{lvl: log.PanicLevel}, want: false},
+		"setup no level,passing fatal": {setupLevel: log.NoLevel, args: args{lvl: log.FatalLevel}, want: false},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			l := &Logger{level: tt.setupLevel}
+			assert.Equal(t, tt.want, l.shouldLog(tt.args.lvl))
+		})
+	}
 }
 
 var buf bytes.Buffer
