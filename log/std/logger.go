@@ -220,10 +220,7 @@ func (l *Logger) Level() patronLog.Level {
 }
 
 func (l *Logger) shouldLog(lvl patronLog.Level) bool {
-	if levelOrder[l.level] <= levelOrder[lvl] {
-		return true
-	}
-	return false
+	return levelOrder[l.level] <= levelOrder[lvl]
 }
 
 func output(logger *log.Logger, args ...interface{}) string {
