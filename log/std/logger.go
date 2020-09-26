@@ -12,16 +12,6 @@ import (
 	patronLog "github.com/beatlabs/patron/log"
 )
 
-var levelOrder = map[patronLog.Level]int{
-	patronLog.DebugLevel: 0,
-	patronLog.InfoLevel:  1,
-	patronLog.WarnLevel:  2,
-	patronLog.ErrorLevel: 3,
-	patronLog.PanicLevel: 4,
-	patronLog.FatalLevel: 5,
-	patronLog.NoLevel:    6,
-}
-
 var levelMap = map[patronLog.Level]string{
 	patronLog.DebugLevel: "DBG",
 	patronLog.InfoLevel:  "INF",
@@ -47,7 +37,6 @@ type Logger struct {
 
 // NewLogger constructor.
 func NewLogger(out io.Writer, lvl patronLog.Level, fields map[string]interface{}) *Logger {
-
 	fieldsLine := createFieldsLine(fields)
 
 	return &Logger{
@@ -96,7 +85,6 @@ func createLogger(out io.Writer, lvl patronLog.Level, fieldLine string) *log.Log
 
 // Sub returns a sub logger with additional fields.
 func (l *Logger) Sub(fields map[string]interface{}) patronLog.Logger {
-
 	for key, value := range l.fields {
 		fields[key] = value
 	}
@@ -220,7 +208,7 @@ func (l *Logger) Level() patronLog.Level {
 }
 
 func (l *Logger) shouldLog(lvl patronLog.Level) bool {
-	return levelOrder[l.level] <= levelOrder[lvl]
+	return patronLog.LevelOrder(l.level) <= patronLog.LevelOrder(lvl)
 }
 
 func output(logger *log.Logger, args ...interface{}) string {
