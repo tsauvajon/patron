@@ -150,6 +150,8 @@ func Benchmark_LoggingEnabled(b *testing.B) {
 	zl := zerolog.New(&bf)
 	l := NewLogger(&zl, log.DebugLevel, f)
 	l.Debugf("testing %d", 1)
+	b.ReportAllocs()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		l.Debugf("testing %d", 1)
@@ -162,6 +164,8 @@ func Benchmark_LoggingDisabled(b *testing.B) {
 	zl := zerolog.New(&bf)
 	l := NewLogger(&zl, log.NoLevel, f)
 	l.Debugf("testing %d", 1)
+	b.ReportAllocs()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		l.Debugf("testing %d", 1)

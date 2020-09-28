@@ -35,7 +35,7 @@ func main() {
 	name := "first"
 	version := "1.0.0"
 
-	err := patron.SetupLogging(name, version)
+	builder, err := patron.NewWithStructuredLogger(name, version, map[string]interface{}{"env": "staging"})
 	if err != nil {
 		fmt.Printf("failed to set up logging: %v", err)
 		os.Exit(1)
@@ -59,10 +59,9 @@ func main() {
 	}
 
 	ctx := context.Background()
-	err = patron.New(name, version).
+	err = builder.
 		WithRoutesBuilder(routesBuilder).
 		WithMiddlewares(middlewareCors).
-		WithLogFields(map[string]interface{}{"env": "staging"}).
 		WithSIGHUP(sig).
 		Run(ctx)
 	if err != nil {
@@ -71,7 +70,6 @@ func main() {
 }
 
 func first(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
-
 	timing, err := DoTimingRequest(ctx)
 	if err != nil {
 		log.FromContext(ctx).Infof("first: failed to get timing information %v: could it be that the seventh service is not running ?", err)
@@ -131,7 +129,7 @@ func DoTimingRequest(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to decode timing response body: %w", err)
 	}
 
-	var rgx = regexp.MustCompile(`\((.*?)\)`)
+	rgx := regexp.MustCompile(`\((.*?)\)`)
 	timeInstance := rgx.FindStringSubmatch(string(tb))
 	if len(timeInstance) == 1 {
 		return "", fmt.Errorf("could not match timeinstance from response %s", string(tb))

@@ -11,10 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/beatlabs/patron/log/std"
+
+	"github.com/beatlabs/patron/log/zerolog"
+
 	"github.com/beatlabs/patron/component/http"
 	patronErrors "github.com/beatlabs/patron/errors"
 	"github.com/beatlabs/patron/log"
-	"github.com/beatlabs/patron/log/zerolog"
 	"github.com/beatlabs/patron/trace"
 	jaeger "github.com/uber/jaeger-client-go"
 )
@@ -26,48 +29,6 @@ const (
 	ver  = "ver"
 	host = "host"
 )
-
-// SetupLogging sets up the default metrics logging.
-func SetupLogging(name, version string) error {
-	return setupLogging(name, version, map[string]interface{}{})
-}
-
-// SetupLoggingWithFields sets up the default metrics logging with given fields.
-func SetupLoggingWithFields(name, version string, fields map[string]interface{}) error {
-	return setupLogging(name, version, fields)
-}
-
-func setupLogging(name, version string, fields map[string]interface{}) error {
-	lvl, ok := os.LookupEnv("PATRON_LOG_LEVEL")
-	if !ok {
-		lvl = string(log.InfoLevel)
-	}
-
-	hostname, err := os.Hostname()
-	if err != nil {
-		return fmt.Errorf("failed to get hostname: %w", err)
-	}
-
-	f := map[string]interface{}{
-		srv:  name,
-		ver:  version,
-		host: hostname,
-	}
-
-	for k, v := range fields {
-		if k == srv || k == ver || k == host {
-			// don't override
-			continue
-		}
-		f[k] = v
-	}
-
-	logSetupOnce.Do(func() {
-		err = log.Setup(zerolog.Create(log.Level(lvl)), f)
-	})
-
-	return err
-}
 
 // Component interface for implementing service components.
 type Component interface {
@@ -119,36 +80,6 @@ func (s *service) run(ctx context.Context) error {
 		ee = append(ee, err)
 	}
 	return patronErrors.Aggregate(ee...)
-}
-
-func (s *service) setupDefaultTracing(name, version string) error {
-	var err error
-
-	host, ok := os.LookupEnv("PATRON_JAEGER_AGENT_HOST")
-	if !ok {
-		host = "0.0.0.0"
-	}
-	port, ok := os.LookupEnv("PATRON_JAEGER_AGENT_PORT")
-	if !ok {
-		port = "6831"
-	}
-	agent := host + ":" + port
-	tp, ok := os.LookupEnv("PATRON_JAEGER_SAMPLER_TYPE")
-	if !ok {
-		tp = jaeger.SamplerTypeProbabilistic
-	}
-	prmVal := 0.0
-	prm := "0.0"
-
-	if prm, ok := os.LookupEnv("PATRON_JAEGER_SAMPLER_PARAM"); ok {
-		prmVal, err = strconv.ParseFloat(prm, 64)
-		if err != nil {
-			return fmt.Errorf("env var for jaeger sampler param is not valid: %w", err)
-		}
-	}
-
-	log.Infof("setting up default tracing %s, %s with param %s", agent, tp, prm)
-	return trace.Setup(name, version, agent, tp, prmVal)
 }
 
 func (s *service) createHTTPComponent() (Component, error) {
@@ -244,28 +175,117 @@ type Builder struct {
 	sighupHandler func()
 }
 
-// New initiates the Service builder chain.
-// The builder contains default values for Alive/Ready checks,
-// the SIGHUP handler and its version.
-func New(name, version string) *Builder {
-	var errs []error
+// New creates a builder.
+func New(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) (*Builder, error) {
+	return newBuilder(name, version, fields, logFactory)
+}
 
+// NewWithStructuredLogger creates a builder and set's up structured logger and tracing.
+func NewWithStructuredLogger(name, version string, fields map[string]interface{}) (*Builder, error) {
+	return newBuilder(name, version, fields, zerolog.Create(getLogLevel()))
+}
+
+// NewWithTextLogger creates a builder and set's up standard Go logger abstraction and tracing.
+func NewWithTextLogger(name, version string, fields map[string]interface{}) (*Builder, error) {
+	return newBuilder(name, version, fields, std.Create(getLogLevel()))
+}
+
+func newBuilder(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) (*Builder, error) {
 	if name == "" {
-		errs = append(errs, errors.New("name is required"))
+		return nil, errors.New("name is required")
 	}
 	if version == "" {
 		version = "dev"
 	}
 
+	err := setupObservability(name, version, fields, logFactory)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Builder{
-		errors:        errs,
+		errors:        make([]error, 0),
 		name:          name,
 		version:       version,
 		acf:           http.DefaultAliveCheck,
 		rcf:           http.DefaultReadyCheck,
 		termSig:       make(chan os.Signal, 1),
 		sighupHandler: func() { log.Info("SIGHUP received: nothing setup") },
+	}, nil
+}
+
+func getLogLevel() log.Level {
+	lvl, ok := os.LookupEnv("PATRON_LOG_LEVEL")
+	if !ok {
+		lvl = string(log.InfoLevel)
 	}
+	return log.Level(lvl)
+}
+
+func setupObservability(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) error {
+	err := setupLogging(name, version, fields, logFactory)
+	if err != nil {
+		return err
+	}
+
+	return setupTracing(name, version)
+}
+
+func setupLogging(name, version string, fields map[string]interface{}, factory log.FactoryFunc) error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("failed to get hostname: %w", err)
+	}
+
+	f := map[string]interface{}{
+		srv:  name,
+		ver:  version,
+		host: hostname,
+	}
+
+	for k, v := range fields {
+		if k == srv || k == ver || k == host {
+			// don't override
+			continue
+		}
+		f[k] = v
+	}
+
+	logSetupOnce.Do(func() {
+		err = log.Setup(factory, f)
+	})
+
+	return err
+}
+
+func setupTracing(name, version string) error {
+	var err error
+
+	host, ok := os.LookupEnv("PATRON_JAEGER_AGENT_HOST")
+	if !ok {
+		host = "0.0.0.0"
+	}
+	port, ok := os.LookupEnv("PATRON_JAEGER_AGENT_PORT")
+	if !ok {
+		port = "6831"
+	}
+	agent := host + ":" + port
+	tp, ok := os.LookupEnv("PATRON_JAEGER_SAMPLER_TYPE")
+	if !ok {
+		tp = jaeger.SamplerTypeProbabilistic
+	}
+	prmVal := 0.0
+	prm := "0.0"
+
+	if prm, ok := os.LookupEnv("PATRON_JAEGER_SAMPLER_PARAM"); ok {
+		prmVal, err = strconv.ParseFloat(prm, 64)
+		if err != nil {
+			return fmt.Errorf("env var for jaeger sampler param is not valid: %w", err)
+		}
+	}
+
+	log.Infof("setting up default tracing %s, %s with param %s", agent, tp, prm)
+	return trace.Setup(name, version, agent, tp, prmVal)
 }
 
 // WithRoutesBuilder adds routes builder to the default HTTP component.
@@ -340,12 +360,6 @@ func (b *Builder) WithSIGHUP(handler func()) *Builder {
 	return b
 }
 
-// WithLogFields sets key/value structured log fields to be passed to the logger.
-func (b *Builder) WithLogFields(fields map[string]interface{}) *Builder {
-	b.fields = fields
-	return b
-}
-
 // Build constructs the Patron service by applying the gathered properties.
 func (b *Builder) build() (*service, error) {
 	if len(b.errors) > 0 {
@@ -360,16 +374,6 @@ func (b *Builder) build() (*service, error) {
 		rcf:           b.rcf,
 		termSig:       b.termSig,
 		sighupHandler: b.sighupHandler,
-	}
-
-	err := SetupLoggingWithFields(b.name, b.version, b.fields)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.setupDefaultTracing(b.name, b.version)
-	if err != nil {
-		return nil, err
 	}
 
 	httpCp, err := s.createHTTPComponent()
