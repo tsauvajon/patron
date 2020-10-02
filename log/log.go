@@ -37,6 +37,7 @@ var levelOrder = map[Level]int{
 	NoLevel:    6,
 }
 
+// LevelOrder returns the numerical order of the level.
 func LevelOrder(lvl Level) int {
 	return levelOrder[lvl]
 }

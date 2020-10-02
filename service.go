@@ -161,7 +161,6 @@ type Builder struct {
 	errors        []error
 	name          string
 	version       string
-	fields        map[string]interface{}
 	cps           []Component
 	routesBuilder *http.RoutesBuilder
 	middlewares   []http.MiddlewareFunc
