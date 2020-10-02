@@ -16,15 +16,11 @@ import (
 	"github.com/beatlabs/patron/encoding/protobuf"
 	"github.com/beatlabs/patron/examples"
 	"github.com/beatlabs/patron/log"
+	"github.com/beatlabs/patron/log/std"
 )
 
 func init() {
-	err := os.Setenv("PATRON_LOG_LEVEL", "debug")
-	if err != nil {
-		fmt.Printf("failed to set log level env var: %v", err)
-		os.Exit(1)
-	}
-	err = os.Setenv("PATRON_JAEGER_SAMPLER_PARAM", "1.0")
+	err := os.Setenv("PATRON_JAEGER_SAMPLER_PARAM", "1.0")
 	if err != nil {
 		fmt.Printf("failed to set sampler env vars: %v", err)
 		os.Exit(1)
@@ -35,9 +31,11 @@ func main() {
 	name := "first"
 	version := "1.0.0"
 
-	builder, err := patron.NewWithStructuredLogger(name, version, map[string]interface{}{"env": "staging"})
+	logger := std.New(os.Stderr, log.DebugLevel, map[string]interface{}{"env": "staging"})
+
+	service, err := patron.New(name, version, patron.Logger(logger))
 	if err != nil {
-		fmt.Printf("failed to set up logging: %v", err)
+		fmt.Printf("failed to set up service: %v", err)
 		os.Exit(1)
 	}
 
@@ -54,12 +52,12 @@ func main() {
 		})
 	}
 	sig := func() {
-		fmt.Println("exit gracefully...")
+		log.Info("exit gracefully...")
 		os.Exit(0)
 	}
 
 	ctx := context.Background()
-	err = builder.
+	err = service.
 		WithRoutesBuilder(routesBuilder).
 		WithMiddlewares(middlewareCors).
 		WithSIGHUP(sig).

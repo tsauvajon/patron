@@ -11,18 +11,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/beatlabs/patron/log/std"
-
-	"github.com/beatlabs/patron/log/zerolog"
-
 	"github.com/beatlabs/patron/component/http"
 	patronErrors "github.com/beatlabs/patron/errors"
 	"github.com/beatlabs/patron/log"
+	"github.com/beatlabs/patron/log/std"
+	patronzerolog "github.com/beatlabs/patron/log/zerolog"
 	"github.com/beatlabs/patron/trace"
 	jaeger "github.com/uber/jaeger-client-go"
 )
-
-var logSetupOnce sync.Once
 
 const (
 	srv  = "srv"
@@ -175,22 +171,46 @@ type Builder struct {
 	sighupHandler func()
 }
 
-// New creates a builder.
-func New(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) (*Builder, error) {
-	return newBuilder(name, version, fields, logFactory)
+// Config for setting up the builder.
+type Config struct {
+	fields map[string]interface{}
+	logger log.Logger
 }
 
-// NewWithStructuredLogger creates a builder and set's up structured logger and tracing.
-func NewWithStructuredLogger(name, version string, fields map[string]interface{}) (*Builder, error) {
-	return newBuilder(name, version, fields, zerolog.Create(getLogLevel()))
+// Option for providing function configuration.
+type Option func(*Config)
+
+// LogFields options to pass in additional log fields.
+func LogFields(fields map[string]interface{}) Option {
+	return func(cfg *Config) {
+		for k, v := range cfg.fields {
+			if k == srv || k == ver || k == host {
+				// don't override
+				continue
+			}
+			cfg.fields[k] = v
+		}
+
+		cfg.fields = fields
+	}
 }
 
-// NewWithTextLogger creates a builder and set's up standard Go logger abstraction and tracing.
-func NewWithTextLogger(name, version string, fields map[string]interface{}) (*Builder, error) {
-	return newBuilder(name, version, fields, std.Create(getLogLevel()))
+// Logger to pass in custom logger.
+func Logger(logger log.Logger) Option {
+	return func(cfg *Config) {
+		cfg.logger = logger
+	}
 }
 
-func newBuilder(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) (*Builder, error) {
+// TextLogger to use Go's standard logger.
+func TextLogger() Option {
+	return func(cfg *Config) {
+		cfg.logger = std.New(os.Stderr, getLogLevel(), nil)
+	}
+}
+
+// New creates a builder with functional options.
+func New(name, version string, options ...Option) (*Builder, error) {
 	if name == "" {
 		return nil, errors.New("name is required")
 	}
@@ -198,7 +218,17 @@ func newBuilder(name, version string, fields map[string]interface{}, logFactory 
 		version = "dev"
 	}
 
-	err := setupObservability(name, version, fields, logFactory)
+	// default config with structured logger and default fields.
+	cfg := Config{
+		logger: patronzerolog.New(os.Stderr, getLogLevel(), nil),
+		fields: defaultLogFields(name, version),
+	}
+
+	for _, option := range options {
+		option(&cfg)
+	}
+
+	err := setupObservability(name, version, cfg.fields, cfg.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +252,21 @@ func getLogLevel() log.Level {
 	return log.Level(lvl)
 }
 
-func setupObservability(name, version string, fields map[string]interface{}, logFactory log.FactoryFunc) error {
-	err := setupLogging(name, version, fields, logFactory)
+func defaultLogFields(name, version string) map[string]interface{} {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = host
+	}
+
+	return map[string]interface{}{
+		srv:  name,
+		ver:  version,
+		host: hostname,
+	}
+}
+
+func setupObservability(name, version string, fields map[string]interface{}, logger log.Logger) error {
+	err := setupLogging(fields, logger)
 	if err != nil {
 		return err
 	}
@@ -231,36 +274,14 @@ func setupObservability(name, version string, fields map[string]interface{}, log
 	return setupTracing(name, version)
 }
 
-func setupLogging(name, version string, fields map[string]interface{}, factory log.FactoryFunc) error {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return fmt.Errorf("failed to get hostname: %w", err)
+func setupLogging(fields map[string]interface{}, logger log.Logger) error {
+	if fields != nil {
+		return log.Setup(logger.Sub(fields))
 	}
-
-	f := map[string]interface{}{
-		srv:  name,
-		ver:  version,
-		host: hostname,
-	}
-
-	for k, v := range fields {
-		if k == srv || k == ver || k == host {
-			// don't override
-			continue
-		}
-		f[k] = v
-	}
-
-	logSetupOnce.Do(func() {
-		err = log.Setup(factory, f)
-	})
-
-	return err
+	return log.Setup(logger)
 }
 
 func setupTracing(name, version string) error {
-	var err error
-
 	host, ok := os.LookupEnv("PATRON_JAEGER_AGENT_HOST")
 	if !ok {
 		host = "0.0.0.0"
@@ -275,16 +296,16 @@ func setupTracing(name, version string) error {
 		tp = jaeger.SamplerTypeProbabilistic
 	}
 	prmVal := 0.0
-	prm := "0.0"
 
 	if prm, ok := os.LookupEnv("PATRON_JAEGER_SAMPLER_PARAM"); ok {
-		prmVal, err = strconv.ParseFloat(prm, 64)
+		tmpVal, err := strconv.ParseFloat(prm, 64)
 		if err != nil {
 			return fmt.Errorf("env var for jaeger sampler param is not valid: %w", err)
 		}
+		prmVal = tmpVal
 	}
 
-	log.Infof("setting up default tracing %s, %s with param %s", agent, tp, prm)
+	log.Infof("setting up default tracing %s, %s with param %f", agent, tp, prmVal)
 	return trace.Setup(name, version, agent, tp, prmVal)
 }
 

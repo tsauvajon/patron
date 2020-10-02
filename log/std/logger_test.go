@@ -11,7 +11,7 @@ import (
 
 func TestNewLogger(t *testing.T) {
 	var b bytes.Buffer
-	logger := NewLogger(&b, log.InfoLevel, map[string]interface{}{"name": "john doe", "age": 18})
+	logger := New(&b, log.InfoLevel, map[string]interface{}{"name": "john doe", "age": 18})
 	assert.NotNil(t, logger.debug)
 	assert.NotNil(t, logger.info)
 	assert.NotNil(t, logger.warn)
@@ -26,7 +26,7 @@ func TestNewLogger(t *testing.T) {
 
 func TestNewSub(t *testing.T) {
 	var b bytes.Buffer
-	logger := NewLogger(&b, log.InfoLevel, map[string]interface{}{"name": "john doe"})
+	logger := New(&b, log.InfoLevel, map[string]interface{}{"name": "john doe"})
 	assert.NotNil(t, logger)
 	subLogger := logger.Sub(map[string]interface{}{"age": 18}).(*Logger)
 	assert.NotNil(t, subLogger.debug)
@@ -44,7 +44,7 @@ func TestNewSub(t *testing.T) {
 func TestLogger(t *testing.T) {
 	// BEWARE: Since we are testing the log output change in line number of statements affect the test outcome
 	var b bytes.Buffer
-	logger := NewLogger(&b, log.DebugLevel, map[string]interface{}{"name": "john doe", "age": 18})
+	logger := New(&b, log.DebugLevel, map[string]interface{}{"name": "john doe", "age": 18})
 
 	type args struct {
 		lvl        log.Level
@@ -125,7 +125,6 @@ func getMessagef(lineNumber int, lvl log.Level) string {
 }
 
 func TestLogger_shouldLog(t *testing.T) {
-
 	type args struct {
 		lvl log.Level
 	}
@@ -158,18 +157,18 @@ func TestLogger_shouldLog(t *testing.T) {
 		"setup error,passing error":    {setupLevel: log.ErrorLevel, args: args{lvl: log.ErrorLevel}, want: true},
 		"setup error,passing panic":    {setupLevel: log.ErrorLevel, args: args{lvl: log.PanicLevel}, want: true},
 		"setup error,passing fatal":    {setupLevel: log.ErrorLevel, args: args{lvl: log.FatalLevel}, want: true},
-		"setup panic,passing debug":    {setupLevel: log.PanicLevel, args: args{lvl: log.DebugLevel}, want: false},
-		"setup panic,passing info":     {setupLevel: log.PanicLevel, args: args{lvl: log.InfoLevel}, want: false},
-		"setup panic,passing warn":     {setupLevel: log.PanicLevel, args: args{lvl: log.WarnLevel}, want: false},
-		"setup panic,passing error":    {setupLevel: log.PanicLevel, args: args{lvl: log.ErrorLevel}, want: false},
-		"setup panic,passing panic":    {setupLevel: log.PanicLevel, args: args{lvl: log.PanicLevel}, want: true},
-		"setup panic,passing fatal":    {setupLevel: log.PanicLevel, args: args{lvl: log.FatalLevel}, want: true},
 		"setup fatal,passing debug":    {setupLevel: log.FatalLevel, args: args{lvl: log.DebugLevel}, want: false},
 		"setup fatal,passing info":     {setupLevel: log.FatalLevel, args: args{lvl: log.InfoLevel}, want: false},
 		"setup fatal,passing warn":     {setupLevel: log.FatalLevel, args: args{lvl: log.WarnLevel}, want: false},
 		"setup fatal,passing error":    {setupLevel: log.FatalLevel, args: args{lvl: log.ErrorLevel}, want: false},
-		"setup fatal,passing panic":    {setupLevel: log.FatalLevel, args: args{lvl: log.PanicLevel}, want: false},
 		"setup fatal,passing fatal":    {setupLevel: log.FatalLevel, args: args{lvl: log.FatalLevel}, want: true},
+		"setup fatal,passing panic":    {setupLevel: log.FatalLevel, args: args{lvl: log.PanicLevel}, want: true},
+		"setup panic,passing debug":    {setupLevel: log.PanicLevel, args: args{lvl: log.DebugLevel}, want: false},
+		"setup panic,passing info":     {setupLevel: log.PanicLevel, args: args{lvl: log.InfoLevel}, want: false},
+		"setup panic,passing warn":     {setupLevel: log.PanicLevel, args: args{lvl: log.WarnLevel}, want: false},
+		"setup panic,passing error":    {setupLevel: log.PanicLevel, args: args{lvl: log.ErrorLevel}, want: false},
+		"setup panic,passing fatal":    {setupLevel: log.PanicLevel, args: args{lvl: log.FatalLevel}, want: false},
+		"setup panic,passing panic":    {setupLevel: log.PanicLevel, args: args{lvl: log.PanicLevel}, want: true},
 		"setup no level,passing debug": {setupLevel: log.NoLevel, args: args{lvl: log.DebugLevel}, want: false},
 		"setup no level,passing info":  {setupLevel: log.NoLevel, args: args{lvl: log.InfoLevel}, want: false},
 		"setup no level,passing warn":  {setupLevel: log.NoLevel, args: args{lvl: log.WarnLevel}, want: false},
@@ -189,7 +188,7 @@ var buf bytes.Buffer
 
 func BenchmarkLogger(b *testing.B) {
 	var tmpBuf bytes.Buffer
-	logger := NewLogger(&tmpBuf, log.DebugLevel, map[string]interface{}{"name": "john doe", "age": 18})
+	logger := New(&tmpBuf, log.DebugLevel, map[string]interface{}{"name": "john doe", "age": 18})
 	b.ReportAllocs()
 	b.ResetTimer()
 

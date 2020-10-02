@@ -4,6 +4,7 @@ package log
 import (
 	"context"
 	"errors"
+	"sync"
 )
 
 // The Level type definition.
@@ -60,22 +61,20 @@ type Logger interface {
 
 type ctxKey struct{}
 
-// FactoryFunc function type for creating loggers.
-type FactoryFunc func(map[string]interface{}) Logger
-
-var logger Logger = &nilLogger{}
+var (
+	logger Logger = &nilLogger{}
+	once   sync.Once
+)
 
 // Setup logging by providing a logger factory.
-func Setup(f FactoryFunc, fls map[string]interface{}) error {
-	if f == nil {
-		return errors.New("factory is nil")
+func Setup(l Logger) error {
+	if l == nil {
+		return errors.New("logger is nil")
 	}
+	once.Do(func() {
+		logger = l
+	})
 
-	if fls == nil {
-		fls = make(map[string]interface{})
-	}
-
-	logger = f(fls)
 	return nil
 }
 

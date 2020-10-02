@@ -35,8 +35,8 @@ type Logger struct {
 	fatal      *log.Logger
 }
 
-// NewLogger constructor.
-func NewLogger(out io.Writer, lvl patronLog.Level, fields map[string]interface{}) *Logger {
+// New constructor.
+func New(out io.Writer, lvl patronLog.Level, fields map[string]interface{}) *Logger {
 	fieldsLine := createFieldsLine(fields)
 
 	return &Logger{
@@ -89,7 +89,7 @@ func (l *Logger) Sub(fields map[string]interface{}) patronLog.Logger {
 		fields[key] = value
 	}
 
-	return NewLogger(l.out, l.level, fields)
+	return New(l.out, l.level, fields)
 }
 
 // Fatal logging.
