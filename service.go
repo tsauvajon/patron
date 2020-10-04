@@ -182,15 +182,13 @@ type Option func(*Config)
 // LogFields options to pass in additional log fields.
 func LogFields(fields map[string]interface{}) Option {
 	return func(cfg *Config) {
-		for k, v := range cfg.fields {
+		for k, v := range fields {
 			if k == srv || k == ver || k == host {
 				// don't override
 				continue
 			}
 			cfg.fields[k] = v
 		}
-
-		cfg.fields = fields
 	}
 }
 

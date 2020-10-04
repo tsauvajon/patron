@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/beatlabs/patron/log/std"
+
 	patronhttp "github.com/beatlabs/patron/component/http"
 	"github.com/beatlabs/patron/log"
 	"github.com/stretchr/testify/assert"
@@ -268,4 +270,45 @@ func (ts testComponent) Run(_ context.Context) error {
 		return errors.New("failed to run component")
 	}
 	return nil
+}
+
+func TestLogFields(t *testing.T) {
+	defaultFields := defaultLogFields("test", "1.0")
+	fields := map[string]interface{}{"key": "value"}
+	fields1 := defaultLogFields("name1", "version1")
+	type args struct {
+		fields map[string]interface{}
+	}
+	tests := map[string]struct {
+		args args
+		want Config
+	}{
+		"success":      {args: args{fields: fields}, want: Config{fields: mergeFields(defaultFields, fields)}},
+		"no overwrite": {args: args{fields: fields1}, want: Config{fields: defaultFields}},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			cfg := Config{fields: defaultFields}
+			LogFields(tt.args.fields)(&cfg)
+			assert.Equal(t, tt.want, cfg)
+		})
+	}
+}
+
+func mergeFields(ff1, ff2 map[string]interface{}) map[string]interface{} {
+	ff := map[string]interface{}{}
+	for k, v := range ff1 {
+		ff[k] = v
+	}
+	for k, v := range ff2 {
+		ff[k] = v
+	}
+	return ff
+}
+
+func TestLogger(t *testing.T) {
+	logger := std.New(os.Stderr, getLogLevel(), nil)
+	cfg := Config{}
+	Logger(logger)(&cfg)
+	assert.Equal(t, logger, cfg.logger)
 }
