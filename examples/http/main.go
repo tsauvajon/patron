@@ -32,7 +32,7 @@ func init() {
 }
 
 func main() {
-	name := "first"
+	name := "httpHandler"
 	version := "1.0.0"
 
 	err := patron.SetupLogging(name, version)
@@ -41,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	routesBuilder := patronhttp.NewRoutesBuilder().Append(patronhttp.NewRouteBuilder("/", first).MethodPost())
+	routesBuilder := patronhttp.NewRoutesBuilder().Append(patronhttp.NewRouteBuilder("/", httpHandler).MethodPost())
 
 	// Setup a simple CORS middleware
 	middlewareCors := func(h http.Handler) http.Handler {
@@ -70,13 +70,13 @@ func main() {
 	}
 }
 
-func first(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
+func httpHandler(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
 
 	timing, err := DoTimingRequest(ctx)
 	if err != nil {
-		log.FromContext(ctx).Infof("first: failed to get timing information %v: could it be that the seventh service is not running ?", err)
+		log.FromContext(ctx).Infof("httpHandler: failed to get timing information %v: could it be that the timing service is not running ?", err)
 	} else {
-		log.FromContext(ctx).Infof("first: pipeline initiated at: %s", timing)
+		log.FromContext(ctx).Infof("httpHandler: pipeline initiated at: %s", timing)
 	}
 
 	var u examples.User
@@ -110,7 +110,7 @@ func first(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, 
 	return patronhttp.NewResponse(fmt.Sprintf("got %s from second HTTP route", rsp.Status)), nil
 }
 
-// DoTimingRequest is a helper method to make a request to the seventh example service from other examples
+// DoTimingRequest is a helper method to make a request to the example timing service from other examples
 func DoTimingRequest(ctx context.Context) (string, error) {
 	request, err := http.NewRequest("GET", "http://localhost:50006/", nil)
 	if err != nil {
@@ -123,7 +123,7 @@ func DoTimingRequest(ctx context.Context) (string, error) {
 
 	response, err := cl.Do(ctx, request)
 	if err != nil {
-		return "", fmt.Errorf("failed create get to seventh service: %w", err)
+		return "", fmt.Errorf("failed create get to timing service: %w", err)
 	}
 
 	tb, err := ioutil.ReadAll(response.Body)

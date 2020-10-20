@@ -65,7 +65,7 @@ func init() {
 }
 
 func main() {
-	name := "fourth"
+	name := "sns"
 	version := "1.0.0"
 
 	err := patron.SetupLogging(name, version)

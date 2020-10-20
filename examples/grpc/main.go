@@ -50,7 +50,7 @@ func (gs *greeterServer) SayHello(ctx context.Context, req *greeter.HelloRequest
 }
 
 func main() {
-	name := "sixth"
+	name := "grpc"
 	version := "1.0.0"
 
 	err := patron.SetupLogging(name, version)

@@ -32,7 +32,7 @@ func init() {
 }
 
 func main() {
-	name := "seventh"
+	name := "timing"
 	version := "1.0.0"
 
 	err := patron.SetupLogging(name, version)
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	routesBuilder := patronhttp.NewRoutesBuilder().
-		Append(patronhttp.NewRouteBuilder("/", seventh).
+		Append(patronhttp.NewRouteBuilder("/", timing).
 			WithRouteCache(cache, httpcache.Age{
 				// we wont allow to override the cache more than once per 15 seconds
 				Min: 15 * time.Second,
@@ -73,9 +73,9 @@ func main() {
 	}
 }
 
-// seventh gives the 7 minute interval of the current unix timestamp
+// timing gives the 7 minute interval of the current unix timestamp
 // since the response will be the same for the next 7 minutes, it s a good use-case to apply caching
-func seventh(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
+func timing(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
 	now := time.Now()
 	minutes := now.Unix() / 60
 	minuteInterval := minutes / 7
