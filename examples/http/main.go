@@ -72,11 +72,11 @@ func main() {
 
 func httpHandler(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
 
-	timing, err := DoTimingRequest(ctx)
+	interval, err := DoIntervalRequest(ctx)
 	if err != nil {
-		log.FromContext(ctx).Infof("httpHandler: failed to get timing information %v: could it be that the timing service is not running ?", err)
+		log.FromContext(ctx).Infof("httpHandler: failed to get interval information %v: could it be that the http-cache service is not running ?", err)
 	} else {
-		log.FromContext(ctx).Infof("httpHandler: pipeline initiated at: %s", timing)
+		log.FromContext(ctx).Infof("httpHandler: pipeline initiated at: %s", interval)
 	}
 
 	var u examples.User
@@ -110,8 +110,8 @@ func httpHandler(ctx context.Context, req *patronhttp.Request) (*patronhttp.Resp
 	return patronhttp.NewResponse(fmt.Sprintf("got %s from second HTTP route", rsp.Status)), nil
 }
 
-// DoTimingRequest is a helper method to make a request to the example timing service from other examples
-func DoTimingRequest(ctx context.Context) (string, error) {
+// DoIntervalRequest is a helper method to make a request to the http-cache example service from other examples
+func DoIntervalRequest(ctx context.Context) (string, error) {
 	request, err := http.NewRequest("GET", "http://localhost:50006/", nil)
 	if err != nil {
 		return "", fmt.Errorf("failed create route request: %w", err)
@@ -123,12 +123,12 @@ func DoTimingRequest(ctx context.Context) (string, error) {
 
 	response, err := cl.Do(ctx, request)
 	if err != nil {
-		return "", fmt.Errorf("failed create get to timing service: %w", err)
+		return "", fmt.Errorf("failed create get to http-cache service: %w", err)
 	}
 
 	tb, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode timing response body: %w", err)
+		return "", fmt.Errorf("failed to decode http-cache response body: %w", err)
 	}
 
 	var rgx = regexp.MustCompile(`\((.*?)\)`)
