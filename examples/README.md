@@ -76,7 +76,7 @@ go run examples/kafka/main.go
 go run examples/amqp/main.go
 go run examples/sns/main.go
 go run examples/sqs/main.go
-go run examples/grpc/main.go examples/grpc/greeter.pb.go
+go run examples/grpc/main.go examples/grpc/user.pb.go
 ```
 
 and then send a sample request:
