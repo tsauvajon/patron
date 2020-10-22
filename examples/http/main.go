@@ -91,23 +91,23 @@ func httpHandler(ctx context.Context, req *patronhttp.Request) (*patronhttp.Resp
 		return nil, fmt.Errorf("failed create request: %w", err)
 	}
 
-	secondRouteReq, err := http.NewRequest("GET", "http://localhost:50001", bytes.NewReader(b))
+	kafkaRouteReq, err := http.NewRequest("GET", "http://localhost:50001", bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("failed create request: %w", err)
 	}
-	secondRouteReq.Header.Add("Content-Type", protobuf.Type)
-	secondRouteReq.Header.Add("Accept", protobuf.Type)
-	secondRouteReq.Header.Add("Authorization", "Apikey 123456")
+	kafkaRouteReq.Header.Add("Content-Type", protobuf.Type)
+	kafkaRouteReq.Header.Add("Accept", protobuf.Type)
+	kafkaRouteReq.Header.Add("Authorization", "Apikey 123456")
 	cl, err := clienthttp.New(clienthttp.Timeout(5 * time.Second))
 	if err != nil {
 		return nil, err
 	}
-	rsp, err := cl.Do(ctx, secondRouteReq)
+	rsp, err := cl.Do(ctx, kafkaRouteReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to post to second service: %w", err)
+		return nil, fmt.Errorf("failed to post to kafka service: %w", err)
 	}
 	log.FromContext(ctx).Infof("request processed: %s %s", u.GetFirstname(), u.GetLastname())
-	return patronhttp.NewResponse(fmt.Sprintf("got %s from second HTTP route", rsp.Status)), nil
+	return patronhttp.NewResponse(fmt.Sprintf("got %s from kafka HTTP route", rsp.Status)), nil
 }
 
 // DoIntervalRequest is a helper method to make a request to the http-cache example service from other examples

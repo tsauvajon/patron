@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	httpCmp, err := newHTTPComponent(kafkaBroker, kafkaTopic, "http://localhost:50000/second")
+	httpCmp, err := newHTTPComponent(kafkaBroker, kafkaTopic, "http://localhost:50000/kafka")
 	if err != nil {
 		log.Fatalf("failed to create processor %v", err)
 	}
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	routesBuilder := patronhttp.NewRoutesBuilder().
-		Append(patronhttp.NewRouteBuilder("/", httpCmp.second).MethodGet().WithTrace().WithAuth(auth))
+		Append(patronhttp.NewRouteBuilder("/", httpCmp.kafkaHandler).MethodGet().WithTrace().WithAuth(auth))
 
 	ctx := context.Background()
 	err = patron.New(name, version).WithRoutesBuilder(routesBuilder).Run(ctx)
@@ -89,7 +89,7 @@ func newHTTPComponent(kafkaBroker, topic, url string) (*httpComponent, error) {
 	return &httpComponent{prd: prd, topic: topic}, nil
 }
 
-func (hc *httpComponent) second(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
+func (hc *httpComponent) kafkaHandler(ctx context.Context, req *patronhttp.Request) (*patronhttp.Response, error) {
 
 	var u examples.User
 	err := req.Decode(&u)
