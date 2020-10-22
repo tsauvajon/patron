@@ -41,7 +41,7 @@ func init() {
 }
 
 func main() {
-	name := "second"
+	name := "kafka"
 	version := "1.0.0"
 
 	err := patron.SetupLogging(name, version)
